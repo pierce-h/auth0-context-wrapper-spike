@@ -1,26 +1,64 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+// Third Party
+import React, { FunctionComponent, lazy, Suspense } from 'react';
+import { AuthProvider, useAuth } from './context/auth-context';
 
-function App() {
+import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
+
+// Screens
+import Home from './screens/home';
+const Profile = lazy(() => import('./screens/profile'));
+
+const AuthenticatedRoute = ({
+  children,
+  exact = false,
+  path,
+}: {
+  children: React.ReactNode;
+  path: string;
+  exact?: boolean;
+}) => {
+  const { isAuthenticated, user, loginWithRedirect } = useAuth();
+
+  console.log(user);
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Route
+      exact={exact}
+      path={path}
+      render={() =>
+        isAuthenticated ? { children } : loginWithRedirect()
+      }></Route>
   );
-}
+};
+
+const AppRoutes = () => {
+  const { isLoading } = useAuth();
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <Switch>
+        <Route exact path='/'>
+          <Home />
+        </Route>
+        <AuthenticatedRoute path='/profile'>
+          <Profile />
+        </AuthenticatedRoute>
+      </Switch>
+    </Suspense>
+  );
+};
+
+const App: FunctionComponent = () => {
+  return (
+    <AuthProvider>
+      <Router>
+        <AppRoutes />
+      </Router>
+    </AuthProvider>
+  );
+};
 
 export default App;
